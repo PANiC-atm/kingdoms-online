@@ -20,7 +20,6 @@
     h1 {
       color: #00ffff;
       text-shadow: 0 0 10px #00ffff;
-      font-size: 2.5em;
     }
 
     #status {
@@ -29,7 +28,7 @@
       padding: 10px;
       border: 1px solid #00ffff;
       border-radius: 10px;
-      width: 300px;
+      width: 320px;
       background: rgba(255, 255, 255, 0.05);
       white-space: pre-line;
     }
@@ -38,11 +37,11 @@
       background: white;
       border: none;
       border-radius: 10px;
-      padding: 10px 20px;
+      padding: 8px 16px;
+      margin: 4px;
       font-size: 1em;
       cursor: pointer;
       transition: 0.2s;
-      margin: 5px;
     }
 
     button:hover {
@@ -51,10 +50,18 @@
 
     #log {
       margin-top: 20px;
-      max-width: 500px;
+      max-width: 600px;
       font-family: monospace;
       white-space: pre-line;
       text-align: left;
+    }
+
+    #actions {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 600px;
     }
   </style>
 </head>
@@ -63,8 +70,22 @@
   <h1>🏰 Kingdoms Offline</h1>
   <div id="status">Loading your kingdom...</div>
 
-  <button id="buyFishingPost">Buy Fishing Post (20 gold)</button>
-  <button id="attack">Attack Other Kingdom (future)</button>
+  <div id="actions">
+    <button id="nextDay">Next Day</button>
+    <button id="buyFarm">Buy Farm</button>
+    <button id="sellFarm">Sell Farm</button>
+    <button id="buyFishingPost">Buy Fishing Post</button>
+    <button id="sellFishingPost">Sell Fishing Post</button>
+    <button id="buyBarracks">Build Barracks</button>
+    <button id="buyShipyard">Build Shipyard</button>
+    <button id="trainInfantry">Train Infantry (1)</button>
+    <button id="trainInfantry10">Train Infantry (10)</button>
+    <button id="trainInfantry100">Train Infantry (100)</button>
+    <button id="trainNavy">Train Navy (1)</button>
+    <button id="trainNavy10">Train Navy (10)</button>
+    <button id="trainNavy100">Train Navy (100)</button>
+    <button id="attack">Attack Other Kingdom (future)</button>
+  </div>
 
   <div id="log"></div>
 
