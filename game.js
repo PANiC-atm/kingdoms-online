@@ -1,177 +1,198 @@
-// --- Kingdoms Offline Game Logic ---
+// Kingdoms Offline - robust version
 
-let player = fixSave(loadGame()) || createNewKingdom();
-updateUI();
-log(`Welcome, ${player.name}! Your kingdom stands ready.`);
+// Wrap everything so we bind after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  // DOM elements helper
+  const $ = id => document.getElementById(id);
 
-// --- BUTTON EVENTS ---
+  // Load/fix or create
+  let player = fixSave(loadGame()) || createNewKingdom();
+  updateUI();
+  log(`Welcome, ${player.name}! Your kingdom stands ready.`);
 
-document.getElementById("nextDay").onclick = nextDay;
+  // Safe element binder
+  function bind(id, fn) {
+    const el = $(id);
+    if (!el) {
+      console.warn(`Missing element #${id} — check index.html`);
+      return;
+    }
+    el.addEventListener('click', fn);
+  }
 
-document.getElementById("buyFarm").onclick = () => buyBuilding("farm");
-document.getElementById("sellFarm").onclick = () => sellBuilding("farm");
+  // Bind buttons
+  bind('nextDay', nextDay);
+  bind('buyFarm', () => buyBuilding('farm'));
+  bind('sellFarm', () => sellBuilding('farm'));
+  bind('buyFishingPost', () => buyBuilding('fishingPost'));
+  bind('sellFishingPost', () => sellBuilding('fishingPost'));
+  bind('buyBarracks', () => buyBuilding('barracks'));
+  bind('buyShipyard', () => buyBuilding('shipyard'));
 
-document.getElementById("buyFishingPost").onclick = () => buyBuilding("fishingPost");
-document.getElementById("sellFishingPost").onclick = () => sellBuilding("fishingPost");
+  bind('trainInfantry', () => trainUnit('infantry', 1));
+  bind('trainInfantry10', () => trainUnit('infantry', 10));
+  bind('trainInfantry100', () => trainUnit('infantry', 100));
+  bind('trainNavy', () => trainUnit('navy', 1));
+  bind('trainNavy10', () => trainUnit('navy', 10));
+  bind('trainNavy100', () => trainUnit('navy', 100));
 
-document.getElementById("buyBarracks").onclick = () => buyBuilding("barracks");
-document.getElementById("buyShipyard").onclick = () => buyBuilding("shipyard");
+  bind('attack', () => log('⚠️ ERROR: Online features unavailable (Firebase not connected)'));
 
-document.getElementById("trainInfantry").onclick = () => trainUnit("infantry", 1);
-document.getElementById("trainInfantry10").onclick = () => trainUnit("infantry", 10);
-document.getElementById("trainInfantry100").onclick = () => trainUnit("infantry", 100);
+  // Reset handler: confirm -> remove localStorage -> create new kingdom -> notify user
+  bind('resetKingdom', () => {
+    if (!confirm('Are you SURE you want to reset your kingdom? This will delete your local save.')) return;
+    try {
+      localStorage.removeItem('kingdomSave');
+      player = createNewKingdom();
+      saveGame();
+      updateUI();
+      // visible confirmation so you know it ran
+      alert('Kingdom has been reset and a brand new kingdom was created.');
+      log('Kingdom reset and new kingdom created.');
+    } catch (err) {
+      console.error('Reset failed', err);
+      alert('Reset failed — check console for details.');
+    }
+  });
 
-document.getElementById("trainNavy").onclick = () => trainUnit("navy", 1);
-document.getElementById("trainNavy10").onclick = () => trainUnit("navy", 10);
-document.getElementById("trainNavy100").onclick = () => trainUnit("navy", 100);
+  // ----- Game logic below -----
 
-document.getElementById("attack").onclick = () =>
-  log("⚠️ ERROR: Online features unavailable (Firebase not connected)");
+  function createNewKingdom() {
+    const name = prompt('Name your kingdom:') || 'Unnamed Kingdom';
+    const newPlayer = {
+      name,
+      gold: 250,
+      population: 200,
+      farm: 0,
+      fishingPost: 0,
+      barracks: 0,
+      shipyard: 0,
+      infantry: 0,
+      navy: 0,
+      code: generateCode(),
+      day: 1,
+    };
+    saveGame(newPlayer);
+    return newPlayer;
+  }
 
-document.getElementById("resetKingdom").onclick = () => {
-  if (confirm("Are you sure you want to reset your kingdom? This cannot be undone!")) {
-    localStorage.removeItem("kingdomSave");
-    player = createNewKingdom();
-    log("Kingdom reset successfully!");
+  function buyBuilding(type) {
+    const costs = { farm: 100, fishingPost: 100, barracks: 100, shipyard: 150 };
+    if (player.gold < costs[type]) return log('Not enough gold!');
+    player.gold -= costs[type];
+    player[type] = (player[type] || 0) + 1;
+    log(`Built 1 ${type}.`);
+    saveGame();
     updateUI();
   }
-};
 
-// --- FUNCTIONS ---
+  function sellBuilding(type) {
+    if (!player[type] || player[type] <= 0) return log(`You have no ${type}s to sell.`);
+    const sellValue = { farm: 50, fishingPost: 50, barracks: 50, shipyard: 75 };
+    player.gold += sellValue[type];
+    player[type]--;
+    log(`Sold 1 ${type} for ${sellValue[type]} gold.`);
+    saveGame();
+    updateUI();
+  }
 
-function createNewKingdom() {
-  const name = prompt("Name your kingdom:") || "Unnamed Kingdom";
-  const newPlayer = {
-    name,
-    gold: 250,
-    population: 200,
-    farm: 0,
-    fishingPost: 0,
-    barracks: 0,
-    shipyard: 0,
-    infantry: 0,
-    navy: 0,
-    code: generateCode(),
-    day: 1,
-  };
-  saveGame(newPlayer);
-  return newPlayer;
-}
+  function trainUnit(type, count) {
+    const requires = { infantry: 'barracks', navy: 'shipyard' };
+    if ((player[requires[type]] || 0) <= 0) return log(`You need a ${requires[type]} first!`);
 
-function buyBuilding(type) {
-  const costs = { farm: 100, fishingPost: 100, barracks: 100, shipyard: 150 };
-  if (player.gold < costs[type]) return log("Not enough gold!");
+    const cost = 2 * count;
+    if (player.gold < cost) return log('Not enough gold!');
+    if (player.population < count) return log('Not enough population!');
 
-  player.gold -= costs[type];
-  player[type]++;
-  log(`Built 1 ${type}.`);
-  saveGame();
-  updateUI();
-}
+    player.gold -= cost;
+    player.population -= count;
+    player[type] = (player[type] || 0) + count;
+    log(`Trained ${count} ${type} unit(s).`);
+    saveGame();
+    updateUI();
+  }
 
-function sellBuilding(type) {
-  if (player[type] <= 0) return log(`You have no ${type}s to sell.`);
-  const sellValue = { farm: 50, fishingPost: 50, barracks: 50, shipyard: 75 };
-  player.gold += sellValue[type];
-  player[type]--;
-  log(`Sold 1 ${type} for ${sellValue[type]} gold.`);
-  saveGame();
-  updateUI();
-}
+  function nextDay() {
+    player.day = (player.day || 1) + 1;
 
-function trainUnit(type, count) {
-  const requires = { infantry: "barracks", navy: "shipyard" };
-  if (player[requires[type]] <= 0)
-    return log(`You need a ${requires[type]} first!`);
+    // population gain from farms & fishing posts
+    const popGain = 25 * ((player.farm || 0) + (player.fishingPost || 0));
+    player.population = (player.population || 0) + popGain;
 
-  const cost = 2 * count;
-  if (player.gold < cost) return log("Not enough gold!");
-  if (player.population < count) return log("Not enough population!");
+    // gold income & upkeep
+    let income = player.population || 0;
+    const upkeep = 10 * (((player.farm || 0) + (player.fishingPost || 0) + (player.barracks || 0) + (player.shipyard || 0)));
+    income -= upkeep;
+    player.gold = (player.gold || 0) + Math.max(income, 0);
 
-  player.gold -= cost;
-  player.population -= count;
-  player[type] += count;
-  log(`Trained ${count} ${type} unit(s).`);
-  saveGame();
-  updateUI();
-}
+    log(`Day ${player.day} summary:\n+${popGain} population\n+${income > 0 ? income : 0} gold income\n-${upkeep} upkeep`);
+    saveGame();
+    updateUI();
+  }
 
-function nextDay() {
-  player.day++;
-
-  // population gain from farms & fishing posts
-  const popGain = 25 * (player.farm + player.fishingPost);
-  player.population += popGain;
-
-  // gold income & upkeep
-  let income = player.population;
-  const upkeep =
-    10 *
-    (player.farm +
-      player.fishingPost +
-      player.barracks +
-      player.shipyard);
-  income -= upkeep;
-  player.gold += Math.max(income, 0);
-
-  log(`Day ${player.day} summary:
-+${popGain} population
-+${income > 0 ? income : 0} gold income
--${upkeep} upkeep`);
-
-  saveGame();
-  updateUI();
-}
-
-function updateUI() {
-  document.getElementById("status").innerText = `
+  function updateUI() {
+    const s = `
 ${player.name}
-Day: ${player.day}
-Gold: ${player.gold}
-Population: ${player.population}
-Farms: ${player.farm}
-Fishing Posts: ${player.fishingPost}
-Barracks: ${player.barracks}
-Shipyards: ${player.shipyard}
-Infantry: ${player.infantry}
-Navy: ${player.navy}
-Code: ${player.code}
+Day: ${player.day || 1}
+Gold: ${player.gold || 0}
+Population: ${player.population || 0}
+Farms: ${player.farm || 0}
+Fishing Posts: ${player.fishingPost || 0}
+Barracks: ${player.barracks || 0}
+Shipyards: ${player.shipyard || 0}
+Infantry: ${player.infantry || 0}
+Navy: ${player.navy || 0}
+Code: ${player.code || '—'}
 `;
-}
+    const statusEl = $('status');
+    if (statusEl) statusEl.innerText = s;
+  }
 
-function saveGame(data = player) {
-  localStorage.setItem("kingdomSave", JSON.stringify(data));
-}
+  function saveGame(data = player) {
+    try {
+      localStorage.setItem('kingdomSave', JSON.stringify(data));
+    } catch (err) {
+      console.error('Save failed', err);
+      alert('Save failed — localStorage may be full or disabled.');
+    }
+  }
 
-function loadGame() {
-  const data = localStorage.getItem("kingdomSave");
-  return data ? JSON.parse(data) : null;
-}
+  function loadGame() {
+    try {
+      const data = localStorage.getItem('kingdomSave');
+      return data ? JSON.parse(data) : null;
+    } catch (err) {
+      console.error('Load failed', err);
+      return null;
+    }
+  }
 
-// 👇 This fixes undefined stats from older saves
-function fixSave(data) {
-  if (!data) return null;
-  const defaults = {
-    name: "Unnamed Kingdom",
-    gold: 250,
-    population: 200,
-    farm: 0,
-    fishingPost: 0,
-    barracks: 0,
-    shipyard: 0,
-    infantry: 0,
-    navy: 0,
-    code: generateCode(),
-    day: 1,
-  };
-  return { ...defaults, ...data };
-}
+  // fix missing keys from older saves
+  function fixSave(data) {
+    if (!data) return null;
+    const defaults = {
+      name: 'Unnamed Kingdom',
+      gold: 250,
+      population: 200,
+      farm: 0,
+      fishingPost: 0,
+      barracks: 0,
+      shipyard: 0,
+      infantry: 0,
+      navy: 0,
+      code: generateCode(),
+      day: 1,
+    };
+    return Object.assign({}, defaults, data);
+  }
 
-function log(msg) {
-  const logDiv = document.getElementById("log");
-  logDiv.innerText = msg + "\n\n" + logDiv.innerText;
-}
+  function log(msg) {
+    const logDiv = $('log');
+    if (!logDiv) return console.log(msg);
+    logDiv.innerText = `${new Date().toLocaleTimeString()} — ${msg}\n\n` + logDiv.innerText;
+  }
 
-function generateCode() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
+  function generateCode() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+});
