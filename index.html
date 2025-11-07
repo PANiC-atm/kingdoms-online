@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kingdoms Offline</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #101010, #202020);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      min-height: 100vh;
+      padding: 40px;
+    }
+
+    h1 {
+      color: #00ffff;
+      text-shadow: 0 0 10px #00ffff;
+      font-size: 2.5em;
+    }
+
+    #status {
+      margin: 20px 0;
+      font-size: 1.2em;
+      padding: 10px;
+      border: 1px solid #00ffff;
+      border-radius: 10px;
+      width: 300px;
+      background: rgba(255, 255, 255, 0.05);
+      white-space: pre-line;
+    }
+
+    button {
+      background: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: 0.2s;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: #ccc;
+    }
+
+    #log {
+      margin-top: 20px;
+      max-width: 500px;
+      font-family: monospace;
+      white-space: pre-line;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🏰 Kingdoms Offline</h1>
+  <div id="status">Loading your kingdom...</div>
+
+  <button id="buyFishingPost">Buy Fishing Post (20 gold)</button>
+  <button id="attack">Attack Other Kingdom (future)</button>
+
+  <div id="log"></div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
