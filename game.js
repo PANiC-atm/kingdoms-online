@@ -1,6 +1,6 @@
 // --- Kingdoms Offline Game Logic ---
 
-let player = loadGame() || createNewKingdom();
+let player = fixSave(loadGame()) || createNewKingdom();
 updateUI();
 log(`Welcome, ${player.name}! Your kingdom stands ready.`);
 
@@ -27,6 +27,15 @@ document.getElementById("trainNavy100").onclick = () => trainUnit("navy", 100);
 
 document.getElementById("attack").onclick = () =>
   log("⚠️ ERROR: Online features unavailable (Firebase not connected)");
+
+document.getElementById("resetKingdom").onclick = () => {
+  if (confirm("Are you sure you want to reset your kingdom? This cannot be undone!")) {
+    localStorage.removeItem("kingdomSave");
+    player = createNewKingdom();
+    log("Kingdom reset successfully!");
+    updateUI();
+  }
+};
 
 // --- FUNCTIONS ---
 
@@ -137,6 +146,25 @@ function saveGame(data = player) {
 function loadGame() {
   const data = localStorage.getItem("kingdomSave");
   return data ? JSON.parse(data) : null;
+}
+
+// 👇 This fixes undefined stats from older saves
+function fixSave(data) {
+  if (!data) return null;
+  const defaults = {
+    name: "Unnamed Kingdom",
+    gold: 250,
+    population: 200,
+    farm: 0,
+    fishingPost: 0,
+    barracks: 0,
+    shipyard: 0,
+    infantry: 0,
+    navy: 0,
+    code: generateCode(),
+    day: 1,
+  };
+  return { ...defaults, ...data };
 }
 
 function log(msg) {
